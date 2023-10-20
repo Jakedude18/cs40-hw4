@@ -2,7 +2,7 @@
 #define CVFCONVERTOR
 
 #include "CVFConvertor.h"
-#include "compressor.h"
+#include <compressor.h>
 
 #define PIXSINBLOCK 4
 
@@ -16,6 +16,6 @@ typedef struct CVFFields * CVFFields_T;
 
 CVFFields_T CVFCompressor(rgbBlock_T rgbBlock);
 
-rgbBlock_T CVFDecompressor(CVFFields_T CVFFields);
+rgbBlock_T CVFDecompressor(CVFFields_T CVFFields, int denominator);
 
 #endif 

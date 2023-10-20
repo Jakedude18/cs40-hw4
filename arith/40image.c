@@ -23,16 +23,20 @@
 #include <a2plain.h>
 #include <uarray2.h>
 #include <a2blocked.h>
+#include <a2plain.h>
 #include <uarray2b.h>
 #include "assert.h"
 #include "compress40.h"
 #include <mem.h>
 #include <compressor.h>
+#include <decompressor.h>
 #include <uarray.h>
-
-/*for testing*/
+#include <quantize.h>
+#include <bitpack.h>
 
 #define PIXSINBLOCK 4
+
+
 
 
 static void (*compress_or_decompress)(FILE *input) = compress40;
@@ -87,11 +91,10 @@ int main(int argc, char *argv[])
 void smallMapper(A2Methods_Object *ptr, void *cl){
         rgbBlock_T rgbBlock = (rgbBlock_T) cl;
         *((Pnm_rgb) UArray_at(rgbBlock->block, rgbBlock->count)) = * ((Pnm_rgb)(ptr));
-        
         rgbBlock->count++;
         if(rgbBlock->count == PIXSINBLOCK){
                 /*compress that shit*/
-                compress(rgbBlock);          
+                compress(rgbBlock);
                 rgbBlock->count = 0;
         }
 }
@@ -109,10 +112,9 @@ void blockedPnmIterator(Pnm_ppm inputPnm){
         cl->count = 0;
         cl->denominator = inputPnm->denominator;
         inputPnm->methods->small_map_block_major(
-                inputPnm->pixels, smallMapper, (void *) cl);  
-        
+                inputPnm->pixels, smallMapper, (void *) cl);
         UArray_free(&(cl->block));
-        free(cl);
+        FREE(cl);
 }
 
 /**
@@ -122,11 +124,88 @@ void blockedPnmIterator(Pnm_ppm inputPnm){
  */
 void compress40(FILE *input){
         Pnm_ppm inputPnm = Pnm_ppmread(input, uarray2_methods_blocked);
+        
+        int compressWidth = inputPnm->width;
+        int trimedHeight = inputPnm->height;
+        bool change = false;
+
+
+        if(compressWidth % 2 == 1){
+                change = true;
+                compressWidth--;
+        }
+        if(trimedHeight % 2 == 1){
+                change = true;
+                trimedHeight--;
+        }
+
+        printf("COMP40 Compressed image format 2\n%u %u\n", compressWidth, trimedHeight);
+
+        // UArray2_T trimedArray;
+        // if(change){
+        //         UArray2_T trimedArray UArray2_new(compressWidth);
+        // }
+        (void) change;
+        inputPnm->height = trimedHeight;
+        inputPnm->width = compressWidth;
         blockedPnmIterator(inputPnm);
         Pnm_ppmfree(&inputPnm);
 }
 
+// static void printRGB(Pnm_rgb input){
+//         printf("%c%c%c", input->red, input->green, input->blue);
+// }
+
 void decompress40(FILE *input){
-        (void) input;    
+        int denominator = 255;
+        unsigned height, width;
+        int read = fscanf(input, "COMP40 Compressed image format 2\n%u %u", &width, &height);
+        assert(read == 2);
+        int c = getc(input);
+        assert(c == '\n');
+
+
+
+        
+
+        UArray2_T outputUArray2 = UArray2_new(width, height, sizeof(struct Pnm_rgb));
+
+        Pnm_ppm pixmap = ALLOC(sizeof(struct Pnm_ppm));
+        pixmap->width = width;
+        pixmap->height = height;
+        pixmap->denominator = denominator;
+        pixmap->pixels = outputUArray2;
+        pixmap->methods = uarray2_methods_plain;
+
+        for(unsigned j = 0; j < height/2; j++){                
+                for(unsigned k = 0; k < width/2; k++){
+                        uint64_t word = 0;
+                        // printf("first bits are %lu\n", firstBits);
+                        // printf("second bits are %lu\n", firstBits);
+                        word = Bitpack_newu(word, 8, 0, getc(input));
+                        word = Bitpack_newu(word, 8, 8, getc(input));
+                        word = Bitpack_newu(word, 8, 16, getc(input));
+                        word = Bitpack_newu(word, 8, 24, getc(input));
+
+                        rgbBlock_T decompressedBlock = decompress(word, denominator);
+                        // for(int i = 0; i < PIXSINBLOCK; i++){
+                        //         Pnm_rgb curpix = (Pnm_rgb) UArray_at(decompressedBlock->block, i);
+                        //         printf("%d,%d,%d\n", curpix->red, curpix->green, curpix->blue);
+                        // }
+                        *((Pnm_rgb)UArray2_at(outputUArray2, k * 2, j * 2)) = *((Pnm_rgb) UArray_at(decompressedBlock->block, 0)); 
+                        *((Pnm_rgb)UArray2_at(outputUArray2, k * 2 + 1, j * 2)) = *((Pnm_rgb) UArray_at(decompressedBlock->block, 2)); 
+                        *((Pnm_rgb)UArray2_at(outputUArray2, k * 2, j * 2 + 1)) = *((Pnm_rgb) UArray_at(decompressedBlock->block, 1)); 
+                        *((Pnm_rgb)UArray2_at(outputUArray2, k * 2 + 1, j * 2 + 1)) = *((Pnm_rgb) UArray_at(decompressedBlock->block, 3)); 
+
+                        UArray_free(&(decompressedBlock->block));
+                        FREE(decompressedBlock);
+                }
+               
+        }
+
+        Pnm_ppmwrite(stdout, pixmap);
+        Pnm_ppmfree(&pixmap);
 }
+
+
 

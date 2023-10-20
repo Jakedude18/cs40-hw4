@@ -56,7 +56,10 @@ all: ppmdiff
 
 ## Linking step (.o -> executable program)
 
-40image: 40image.o a2plain.o uarray2.o a2blocked.o uarray2b.o compressor.o CVFConvertor.o DCTConvertor.o quantize.o
+40image: 40image.o a2plain.o uarray2.o a2blocked.o uarray2b.o compressor.o decompressor.o CVFConvertor.o DCTConvertor.o quantize.o bitpacker.o bitpack.o
+	$(CC) $(LDFLAGS) $^ -o $(BUILD_DIR)/$@ $(LDLIBS)
+
+bitpacktest: bitpacktest.o bitpack.o
 	$(CC) $(LDFLAGS) $^ -o $(BUILD_DIR)/$@ $(LDLIBS)
 
 ppmdiff: ppmdiff.o a2plain.o uarray2.o

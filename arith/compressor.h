@@ -3,6 +3,8 @@
 
 #include <pnm.h>
 #include <uarray.h>
+#include <WordFields.h>
+
 
 
 #define PIXSINBLOCK 4

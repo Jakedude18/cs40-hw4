@@ -107,8 +107,8 @@ void UArray2b_map(T array2b,
         int       bw     = UArray2_width(blocks);
         int       bh     = UArray2_height(blocks);
 
-        for (int bx = 0; bx < bw; bx++) {
-                for (int by = 0; by < bh; by++) {
+        for (int by = 0; by < bh; by++) {
+                for (int bx = 0; bx < bw; bx++) {
                         UArray_T *blockp = UArray2_at(blocks, bx, by);
                         UArray_T  block  = *blockp;
                         int       len    = UArray_length(block);

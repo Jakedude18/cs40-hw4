@@ -3,13 +3,8 @@
 
 #include <CVFConvertor.h>
 #include <DCTConvertor.h>
+#include <WordFields.h>
 
-struct WordFields{
-        int a, b, c, d;
-        unsigned IndexPB, IndexPR; 
-};
-
-typedef struct WordFields * WordFields_T;
 
 
 void quantizeChromas(CVFFields_T input, WordFields_T output);

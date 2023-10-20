@@ -3,13 +3,15 @@
 
 #include <compressor.h>
 #include <CVFConvertor.h>
+#include <WordFields.h>
+#include <stdint.h>
+
 
 /**
- * @brief takes in a rgbBlock and prints it out as a bitpacked integer
+ * @brief takes in a bitpacked integer and prints it out as a rgbBlock
  * 
- * @param input rgbBlock_T to be compressed
+ * @param input int to be decompressed
  */
-rgbBlock_T decompress(int input){
-}
+rgbBlock_T decompress(uint64_t input, int denominator);
 
 #endif

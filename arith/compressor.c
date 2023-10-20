@@ -2,8 +2,11 @@
 #include <CVFConvertor.h>
 #include <DCTConvertor.h>
 #include <quantize.h>
+#include <WordFields.h>
 #include <pnm.h>
 #include <mem.h>
+#include <bitpacker.h>
+#include <bitpack.h>
 
 
 /**
@@ -15,13 +18,11 @@
 void compress(rgbBlock_T input) {
 
 
-        /*
-        printf("original rgbBlock\n");
-        for(int i = 0; i < PIXSINBLOCK; i++){
-                Pnm_rgb curPix = (Pnm_rgb) UArray_at(input->block, i );
-                printf("%u.%u.%u  ", curPix->red, curPix->green, curPix->blue);
-        }
-        */
+        
+        // for(int i = 0; i < PIXSINBLOCK; i++){
+        //         Pnm_rgb curPix = (Pnm_rgb) UArray_at(input->block, i );
+        //         printf("%u.%u.%u  \n", curPix->red, curPix->green, curPix->blue);
+        // }
         
 
         CVFFields_T CVFFieldsComp = CVFCompressor(input);
@@ -30,32 +31,28 @@ void compress(rgbBlock_T input) {
 
         WordFields_T wordFieldsComp = ALLOC(sizeof(struct WordFields));
         quantizeChromas(CVFFieldsComp, wordFieldsComp);
-        
-        CVFFields_T CVFFieldsDecomp = DCTDecompressor(DCTFieldsComp);
-        FREE(DCTFieldsComp);
-        CVFFieldsDecomp->PB = CVFFieldsComp->PB;
-        CVFFieldsDecomp->PR = CVFFieldsComp->PR;
-        /* free later because we have to copy over values*/
+        quantizeCoeffients(DCTFieldsComp, wordFieldsComp);
+
+        uint64_t packedInt = bitPacker(wordFieldsComp);
+
+        /* print out in big endian order */
+        putchar(Bitpack_getu(packedInt, 8, 0));
+        putchar(Bitpack_getu(packedInt, 8, 8));
+        putchar(Bitpack_getu(packedInt, 8, 16));
+        putchar(Bitpack_getu(packedInt, 8, 24));
+
+
+
         FREE(CVFFieldsComp);
+        FREE(DCTFieldsComp);
+        FREE(wordFieldsComp);
 
-        rgbBlock_T output = CVFDecompressor(CVFFieldsDecomp);
-        FREE(CVFFieldsDecomp);
     
-        
-        /*
-        printf("\ndecompressed rgbBlock\n");
-        for(int i = 0; i < PIXSINBLOCK; i++){
-                Pnm_rgb curPix = (Pnm_rgb) UArray_at(output->block, i);
-                printf("%u.%u.%u  ", curPix->red, curPix->green, curPix->blue);
-        }
-        */
-
-
-        UArray_free(&(output->block));
-        FREE(output);
-        
-        // FREE(output);
-        printf("\n");
-        /*for testing*/
+        // printf("\nDecompressed rgbBlock\n");
+        // for(int i = 0; i < PIXSINBLOCK; i++){
+        //         Pnm_rgb curPix = (Pnm_rgb) UArray_at(output->block, i);
+        //         printf("%u.%u.%u  ", curPix->red, curPix->green, curPix->blue);
+        // }
 
 }
+

@@ -22,7 +22,7 @@ DCTFields_T DCTCompressor(CVFFields_T input){
         DCTFields->b = (Y4 + Y3 - Y2 - Y1)/4.0;
         DCTFields->c = (Y4 - Y3 + Y2 - Y1)/4.0;
         DCTFields->d = (Y4 - Y3 - Y2 + Y1)/4.0;
-        printf("%f, %f, %f, %f \n", DCTFields->a, DCTFields->b, DCTFields->c, DCTFields->d);
+        //printf("%f, %f, %f, %f \n", DCTFields->a, DCTFields->b, DCTFields->c, DCTFields->d);
         return DCTFields;
 }
 

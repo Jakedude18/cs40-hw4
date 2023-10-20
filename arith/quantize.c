@@ -2,9 +2,12 @@
 #include <mem.h>
 #include <arith40.h>
 #include <math.h>
+#include <assert.h>
 
-#define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
-#define MAX(X, Y) (((X) > (Y)) ? (X) : (Y))
+
+static float trim(float x);
+
+static void checkCoeffients(int x);
 
 /**
  * @brief Use Arith40_index_of_chroma to convert the two chroma values
@@ -14,8 +17,9 @@
  * @param output Void, but passed through WordFields (IndexPB, IndexPR)
  */
 void quantizeChromas(CVFFields_T input, WordFields_T output){
-        output->IndexPB = Arith40_index_of_chroma(input->PB);
-        output->IndexPR = Arith40_index_of_chroma(input->PR);
+        // printf("PB: %f PR: %f\n", input->PB, input->PR);
+        output->indexPB = Arith40_index_of_chroma(input->PB);
+        output->indexPR = Arith40_index_of_chroma(input->PR);
 }
 
 /**
@@ -26,8 +30,9 @@ void quantizeChromas(CVFFields_T input, WordFields_T output){
  * @param output Dequenatied PB and PR values passed through output
  */
 void dequantizeChromas(WordFields_T input, CVFFields_T output){
-        output->PB = Arith40_chroma_of_index(input->IndexPB);
-        output->PR = Arith40_chroma_of_index(input->IndexPR);
+        output->PB = Arith40_chroma_of_index(input->indexPB);
+        output->PR = Arith40_chroma_of_index(input->indexPR);
+        // printf("PB: %f PR: %f\n", output->PB, output->PR);
 }
 
 
@@ -39,20 +44,40 @@ void dequantizeChromas(WordFields_T input, CVFFields_T output){
  * @param output Void, but passed through WordFields 
  */
 void quantizeCoeffients(DCTFields_T input, WordFields_T output){
-        /*check for values that arent encoded*/
-        b = MIN(b, .3);
-        b = MAX(b, -.3);
-        c = MIN(c, .3);
-        c = MAX(c, -.3);
-        d = MIN(d, .3);
-        d = MAX(d, -.3);
+        /*check for values that aren't encoded*/
+        // printf("a:%f b:%f c:%f d:%f \n", input->a, input->b, input->c, input->d);
+        input->b = trim(input->b);
+        input->c = trim(input->c);
+        input->d = trim(input->d);
         /* quantze a */
         output->a = (unsigned) (input->a * 511);
-        output->b =  round(input->b * 50);
-        output->c =  round(input->c * 50);
-        output->d =  round(input->d * 50);
+        output->b = round(input->b * 50);
+        output->c = round(input->c * 50);
+        output->d = round(input->d * 50);
+        checkCoeffients(output->b);
+        checkCoeffients(output->c);
+        checkCoeffients(output->d);
 
+        // printf("a:%d b:%d c:%d d:%d \n", output->a, output->b, output->c, output->d);
 }
+
+static void checkCoeffients(int x){
+        assert(x >= -15);
+        assert(x <= 15);
+}
+
+static float trim(float x){
+        if(x > .3){
+                return .3;
+        }
+        else if(x < -.3){
+                return -.3;
+        }
+        else {
+                return x;
+        }
+}
+
 
 /**
  * @brief Use reverse linear quantization function to recover
@@ -62,8 +87,18 @@ void quantizeCoeffients(DCTFields_T input, WordFields_T output){
  * @param output Dequantized DCT coefficents (a,b,c,d)
  */
 DCTFields_T dequantizeCoeffients(WordFields_T input){
-        (void) input;
-        DCTFields_T DCTFields = ALLOC(sizeof(struct DCTFields));
+        DCTFields_T output = ALLOC(sizeof(struct DCTFields));
+        // printf("a is %u\n", input->a);
+        // printf("b is %d\n", input->b);
+        // printf("c is %d\n", input->c);
+        // printf("d is %d\n", input->d);
+
+        output->a = ((float) input->a) / 511.0;
+        output->b = ((float) input->b) / 50.0;
+        output->c = ((float) input->c) / 50.0;
+        output->d = ((float) input->d) / 50.0;
+
+        //printf("a:%f b:%f c:%f d:%f \n", output->a, output->b, output->c, output->d);
         
-        return DCTFields;
+        return output;
 }
