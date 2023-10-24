@@ -40,11 +40,10 @@ LDLIBS = -larith40 -l40locality -lnetpbm -lpnmrdr -lcii40  -lm
 INCLUDES = $(shell echo *.h)
 
 
-BUILD_DIR = ./build
 
 ############### Rules ###############
 
-all: ppmdiff
+all: 40image
 
 
 ## Compile step (.c files -> .o files)
@@ -57,14 +56,14 @@ all: ppmdiff
 ## Linking step (.o -> executable program)
 
 40image: 40image.o a2plain.o uarray2.o a2blocked.o uarray2b.o compressor.o decompressor.o CVFConvertor.o DCTConvertor.o quantize.o bitpacker.o bitpack.o
-	$(CC) $(LDFLAGS) $^ -o $(BUILD_DIR)/$@ $(LDLIBS)
+	$(CC) $(LDFLAGS) $^ -o $@ $(LDLIBS)
 
 bitpacktest: bitpacktest.o bitpack.o
-	$(CC) $(LDFLAGS) $^ -o $(BUILD_DIR)/$@ $(LDLIBS)
+	$(CC) $(LDFLAGS) $^ -o $@ $(LDLIBS)
 
 ppmdiff: ppmdiff.o a2plain.o uarray2.o
-	$(CC) $(LDFLAGS) $^ -o $(BUILD_DIR)/$@ $(LDLIBS)
+	$(CC) $(LDFLAGS) $^ -o $@ $(LDLIBS)
 
 clean:
-	rm -f $(BUILD_DIR)/* *.o
+	rm -f 40image *.o
 

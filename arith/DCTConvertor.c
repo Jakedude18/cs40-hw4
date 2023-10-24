@@ -1,3 +1,15 @@
+/**
+ * @file DCTConvertor.c
+ * @author Jake Kerrigan, Jacob Frieman
+ * @date 10/16/2023
+ * 
+ * @brief 
+ * This file defines the DCTCompressor and DCTDecompressor public functions.
+ * DCTCompressor takes component video values and uses discrete cosine
+ * tranform to calculate the cosine coefficients a,b,c,d. DCTDecompresoor
+ * does the inverse calculations to convert cosine coefficients back into
+ * component video values.
+ **/
 
 #include <DCTConvertor.h>
 #include <mem.h>
@@ -9,7 +21,8 @@
  * @param input CVFFields although we only need Y1, Y2, Y3, and Y4 
  * @return DCTFields_T 
  */
-DCTFields_T DCTCompressor(CVFFields_T input){
+DCTFields_T DCTCompressor(CVFFields_T input)
+{
         DCTFields_T DCTFields = ALLOC(sizeof(struct DCTFields));
 
         float Y1 = input->lumas[0];
@@ -22,7 +35,7 @@ DCTFields_T DCTCompressor(CVFFields_T input){
         DCTFields->b = (Y4 + Y3 - Y2 - Y1)/4.0;
         DCTFields->c = (Y4 - Y3 + Y2 - Y1)/4.0;
         DCTFields->d = (Y4 - Y3 - Y2 + Y1)/4.0;
-        //printf("%f, %f, %f, %f \n", DCTFields->a, DCTFields->b, DCTFields->c, DCTFields->d);
+        // printf("%f, %f, %f, %f \n", DCTFields->a, DCTFields->b, DCTFields->c, DCTFields->d);
         return DCTFields;
 }
 
@@ -33,8 +46,10 @@ DCTFields_T DCTCompressor(CVFFields_T input){
  * @param input 
  * @return CVFFields_T 
  */
-CVFFields_T DCTDecompressor(DCTFields_T input){
+CVFFields_T DCTDecompressor(DCTFields_T input)
+{
         CVFFields_T CVFFields = ALLOC(sizeof(struct CVFFields)); 
+        // printf("%f, %f, %f, %f \n", input->a, input->b, input->c, input->d);
 
         float a = input->a;
         float b = input->b;

@@ -62,6 +62,7 @@ int main(int argc, char *argv[])
         } 
         sum /= (NUMPIXS * smallerWidth * smallerHeight);
         printf("%f\n", sqrt(sum));
-        
+        fclose(fp1);
+        fclose(fp2);
         exit(0);
 }

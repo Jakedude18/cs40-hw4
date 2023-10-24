@@ -1,6 +1,22 @@
+/**
+ * @file CVFConvertor.c
+ * @author Jake Kerrigan, Jacob Frieman
+ * @date 10/16/2023
+ * 
+ * @brief 
+ * This file defines the CVFCompressor and CVFDecompressor public functions,
+ * and the static function roundToOne. CVFCompressor takes an rgbBlock and
+ * tranforms that values to component video color space. CVFDecompressor
+ * takes the componenet video color space values and inverses the arithmetic
+ * back to rgb values.
+ **/
+
 #include "CVFConvertor.h"
 #include <mem.h>
 #include <uarray.h>
+
+
+static float roundToOne(float x);
 
 
 /**
@@ -11,7 +27,8 @@
  * @note allocates a CVFFields_T that must be deallocated by client 
  * @return CVFFields 
  */
-CVFFields_T CVFCompressor(rgbBlock_T rgbBlock){
+CVFFields_T CVFCompressor(rgbBlock_T rgbBlock)
+{
         CVFFields_T CVFFields = ALLOC(sizeof(struct CVFFields));
 
         
@@ -30,7 +47,7 @@ CVFFields_T CVFCompressor(rgbBlock_T rgbBlock){
         CVFFields->PB = (pbSum / PIXSINBLOCK) / rgbBlock->denominator;
         CVFFields->PR = (prSum / PIXSINBLOCK) / rgbBlock->denominator;
         // printf("PB: %f, PR: %f\n", CVFFields->PB, CVFFields->PR);
-        // printf("%f,%f,%f,%f  \n", CVFFields->lumas[0], CVFFields->lumas[1], CVFFields->lumas[2], CVFFields->lumas[3]);
+        // printf("%f, %f, %f, %f  \n", CVFFields->lumas[0], CVFFields->lumas[1], CVFFields->lumas[2], CVFFields->lumas[3]);
         return CVFFields;
 }
 
@@ -42,9 +59,10 @@ CVFFields_T CVFCompressor(rgbBlock_T rgbBlock){
  * @note allocates an rgbblock which muse be deallocated by the client
  * @return rgbBlock_T 
  */
-rgbBlock_T CVFDecompressor(CVFFields_T CVFFields, int denominator){
+rgbBlock_T CVFDecompressor(CVFFields_T CVFFields, int denominator)
+{
         // printf("PB: %f, PR: %f\n", CVFFields->PB, CVFFields->PR);
-        // printf("%f.%f.%f.%f  \n", CVFFields->lumas[0], CVFFields->lumas[1], CVFFields->lumas[2], CVFFields->lumas[3]);
+        // printf("%f, %f, %f, %f  \n", CVFFields->lumas[0], CVFFields->lumas[1], CVFFields->lumas[2], CVFFields->lumas[3]);
         rgbBlock_T rgbBlock = ALLOC(sizeof(struct rgbBlock));
         rgbBlock->block = UArray_new(PIXSINBLOCK, sizeof(struct Pnm_rgb));
         rgbBlock->count = 0;
@@ -53,11 +71,29 @@ rgbBlock_T CVFDecompressor(CVFFields_T CVFFields, int denominator){
         float pr = CVFFields->PR;
         for(int i = 0; i < PIXSINBLOCK; i++){
                 float y = CVFFields->lumas[i];
+                float red = (1.0 * y + 0.0 * pb + 1.402 * pr);
+                float green = (1.0 * y - 0.344136 * pb - 0.714136 * pr);
+                float blue = (1.0 * y + 1.772 * pb + 0.0 * pr);
                 
-                ((Pnm_rgb)UArray_at(rgbBlock->block,i))->red = (1.0 * y + 0.0 * pb + 1.402 * pr) * denominator;
-                ((Pnm_rgb)UArray_at(rgbBlock->block,i))->green = (1.0 * y - 0.344136 * pb - 0.714136 * pr) * denominator;
-                ((Pnm_rgb)UArray_at(rgbBlock->block,i))->blue = (1.0 * y + 1.772 * pb + 0.0 * pr ) * denominator;
+                red = roundToOne(red);
+                green = roundToOne(green);
+                blue = roundToOne(blue);
+                
+                ((Pnm_rgb)UArray_at(rgbBlock->block,i))->red = red * denominator;
+                ((Pnm_rgb)UArray_at(rgbBlock->block,i))->green = green * denominator;
+                ((Pnm_rgb)UArray_at(rgbBlock->block,i))->blue = blue * denominator;
         }
 
         return rgbBlock;
+}
+
+static float roundToOne(float x)
+{
+        if (x > 1){
+                return 1.0;
+        }
+        if (x < 0){
+                return 0;
+        }
+        return x;
 }

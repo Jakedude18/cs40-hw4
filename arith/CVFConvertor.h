@@ -1,3 +1,14 @@
+/**
+ * @file CVFConvertor.h
+ * @author Jake Kerrigan, Jacob Frieman
+ * @date 10/16/2023
+ * 
+ * @brief 
+ *  This is the header file to CVFConverter.c. It declares the public functions
+ *  CVFCompressor and CVFDecompressor, and the struct CVFFields that holds the
+ *  PB, PR and the luma values of a 2x2 block.
+ **/
+
 #ifndef CVFCONVERTOR
 #define CVFCONVERTOR
 

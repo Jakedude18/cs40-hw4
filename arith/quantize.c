@@ -1,3 +1,17 @@
+/**
+ * @file quantize.c
+ * @author Jake Kerrigan, Jacob Frieman
+ * @date 10/16/2023
+ * 
+ * @brief 
+ * This file defines the quantizeChromas and quantizeCoefficients public
+ * functions that transform PB, PR and cosine coefficients into quantized
+ * values. Additionallym this file defines the dequantizeChromas and 
+ * dequantizeCoefficients public functions that inverse the quantization
+ * calculations. It also defines the static functions trim and
+ * checkCoefficients.
+ **/
+
 #include <quantize.h>
 #include <mem.h>
 #include <arith40.h>
@@ -16,7 +30,8 @@ static void checkCoeffients(int x);
  * @param input PB and PR luma values (unsigned ints) retrieved through CVFFields
  * @param output Void, but passed through WordFields (IndexPB, IndexPR)
  */
-void quantizeChromas(CVFFields_T input, WordFields_T output){
+void quantizeChromas(CVFFields_T input, WordFields_T output)
+{
         // printf("PB: %f PR: %f\n", input->PB, input->PR);
         output->indexPB = Arith40_index_of_chroma(input->PB);
         output->indexPR = Arith40_index_of_chroma(input->PR);
@@ -29,7 +44,8 @@ void quantizeChromas(CVFFields_T input, WordFields_T output){
  * @param intput Quantized PB and PR (retrieved from wordField)
  * @param output Dequenatied PB and PR values passed through output
  */
-void dequantizeChromas(WordFields_T input, CVFFields_T output){
+void dequantizeChromas(WordFields_T input, CVFFields_T output)
+{
         output->PB = Arith40_chroma_of_index(input->indexPB);
         output->PR = Arith40_chroma_of_index(input->indexPR);
         // printf("PB: %f PR: %f\n", output->PB, output->PR);
@@ -43,7 +59,8 @@ void dequantizeChromas(WordFields_T input, CVFFields_T output){
  * @param input Luma values a, b, c, d (unsigned ints) 
  * @param output Void, but passed through WordFields 
  */
-void quantizeCoeffients(DCTFields_T input, WordFields_T output){
+void quantizeCoeffients(DCTFields_T input, WordFields_T output)
+{
         /*check for values that aren't encoded*/
         // printf("a:%f b:%f c:%f d:%f \n", input->a, input->b, input->c, input->d);
         input->b = trim(input->b);
@@ -61,12 +78,14 @@ void quantizeCoeffients(DCTFields_T input, WordFields_T output){
         // printf("a:%d b:%d c:%d d:%d \n", output->a, output->b, output->c, output->d);
 }
 
-static void checkCoeffients(int x){
+static void checkCoeffients(int x)
+{
         assert(x >= -15);
         assert(x <= 15);
 }
 
-static float trim(float x){
+static float trim(float x)
+{
         if(x > .3){
                 return .3;
         }
@@ -86,7 +105,11 @@ static float trim(float x){
  * @param input quantized DCT coefficients (retrieved from wordField)
  * @param output Dequantized DCT coefficents (a,b,c,d)
  */
-DCTFields_T dequantizeCoeffients(WordFields_T input){
+DCTFields_T dequantizeCoeffients(WordFields_T input)
+{
+
+        // printf("a:%d b:%d c:%d d:%d \n", input->a, input->b, input->c, input->d);
+
         DCTFields_T output = ALLOC(sizeof(struct DCTFields));
         // printf("a is %u\n", input->a);
         // printf("b is %d\n", input->b);
@@ -98,7 +121,7 @@ DCTFields_T dequantizeCoeffients(WordFields_T input){
         output->c = ((float) input->c) / 50.0;
         output->d = ((float) input->d) / 50.0;
 
-        //printf("a:%f b:%f c:%f d:%f \n", output->a, output->b, output->c, output->d);
+        // printf("a:%f b:%f c:%f d:%f \n", output->a, output->b, output->c, output->d);
         
         return output;
 }

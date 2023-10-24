@@ -1,0 +1,62 @@
+Jake Kerrigan (jkerri01)
+Jacob Frieman (jfriem01)
+
+Acknowledges help you may have received from or collaborative work you may 
+have undertaken with classmates, programming partners, course staff, or others
+    We referenced previous homeworks iii and locality for UArray2b, UArray2,
+    and A2Methods implementations. Additionally, we referenced locality's 
+    main method.
+
+Files:
+40image.c
+    Holds the main method and calls compress and decompress to execute steps
+    of compression and decompression.
+compressor.c
+    Holds aggregator function compress that calls the steps of compression
+compressor.h
+    Header file to compressor.c
+decompressor.c
+    Holds the aggregator function decompress that calls the steps of
+    decompression
+decompressor.h
+    Header file to decompressor.c
+CVFConvertor.c
+    Converts a block of rgbs to component video values or can inverse this
+    conversion
+CVFConvertor.h
+    Header file to CVFConvertor.c
+DCTConvertor.c
+    Converts component video values to discrete cosine values or can
+    inverse this conversion
+DCTConvertor.h
+    Header file to DCTConvertor.c
+quantize.c
+    Quantizes discrete cosine values and quantizes PB and PR chroma values
+    or can dequantize discrete cosine values and quantizes PB and PR chroma
+    values
+quantize.h
+    Header file to quantize.c
+WordFields.h
+    Declares the WordFields struct
+bitpacker.c
+    Bitpacks quantized values into an integer or can unpack an integer into
+    quantized values
+quantize.h
+    Header file to bitpacker.c
+bitpack.c
+    Defines to functions for the bitpack interface
+bitpack.h
+    Header file to bitpack.c
+Makefile
+    compiles our code and creates a 40image executable binary.
+    Additionally, it creates a bitpack.o relocatable object file.
+
+Identifies what has been correctly implemented and what has not
+    We have implemented all aspects
+
+Says approximately how many hours you have spent analyzing the problems posed
+in the assignment
+    We spent about 10 hours on this.
+Says approximately how many hours you have spent solving the problems after
+your analysis
+    We spent about 40 hours on this.

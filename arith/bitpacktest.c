@@ -88,12 +88,20 @@ int main(int argc, char *argv[]){
         (void) argc;
         (void) argv;
 
-        uint64_t n = 0x3f4;
-        unsigned width = 2;
-        unsigned lsb = 0;
-        int64_t val = 2;
+        uint64_t n = 0;
+        (void) n;
+        unsigned width = 9;
+        unsigned lsb = 23;
+        int64_t val = 207;
+        uint64_t word = 0;
+        word = Bitpack_newu(word, width, lsb, val);
+        word = Bitpack_news(word, 5, 18, -12);
+        word = Bitpack_news(word, 5, 13, -5);
+        word = Bitpack_news(word, 5, 8, 13);
         
-        printf("%ld\n", Bitpack_gets(Bitpack_news(n, width, lsb, val), width, lsb));
+        printf("a is now %lu\n", Bitpack_getu(word, 9, 23));
+        printf("b is now %ld\n", Bitpack_gets(word, 5, 18));
+        
 
 }
 

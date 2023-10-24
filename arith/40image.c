@@ -4,13 +4,19 @@
  * @date 10/16/2023
  * 
  * @brief 
+ *  Main functionality for arith. Takes in a ppm of an image or a bit packed
+ *  binary file containing the compressed version of a ppm and compresses or  *  decompresses the image according to the inputted flag.
+ *  Compress40 calls the compress agregator function for each 2x2 block
+ *  in the ppm of an image. Decompress40 calls the decompress agregator
+ *  function for each "word" in the bitpacked binary file.
+ *  
  * main() - is responsible for stdio / decoding the input from user
  * output
  * 
  * Usage:
  * 40images -c/d [filename]"
  * 
- * The -s flag is for compression and -d flag is for decompression
+ * The -c flag is for compression and -d flag is for decompression
  * 
  * The transformed ppm is printed in binary to stdout
  */
@@ -19,6 +25,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <math.h>
 #include <pnm.h>
 #include <a2plain.h>
 #include <uarray2.h>
@@ -35,11 +42,17 @@
 #include <bitpack.h>
 
 #define PIXSINBLOCK 4
+#define MINDENOMINATOR 255
+#define MAXDENOMINATOR 65535
+#define PI 3.14159265358979323846  /* pi */
+#define SCALLINGCOEFFICIENT 500
 
 
 
-
+static UArray2b_T trimmedArray(UArray2b_T original, int trimmedWidth, int trimmedHeight);
 static void (*compress_or_decompress)(FILE *input) = compress40;
+static int denominatorCalculator(int size);
+void copyArray(int col, int row, UArray2b_T copy, void *curr, void *original);
 void compress40(FILE *input);
 void decompress40(FILE *input);
 
@@ -88,7 +101,8 @@ int main(int argc, char *argv[])
  * @param ptr pointer to pnm_rgb 
  * @param cl 
  */
-void smallMapper(A2Methods_Object *ptr, void *cl){
+void smallMapper(A2Methods_Object *ptr, void *cl)
+{
         rgbBlock_T rgbBlock = (rgbBlock_T) cl;
         *((Pnm_rgb) UArray_at(rgbBlock->block, rgbBlock->count)) = * ((Pnm_rgb)(ptr));
         rgbBlock->count++;
@@ -122,44 +136,67 @@ void blockedPnmIterator(Pnm_ppm inputPnm){
  * 
  * @param input Filename to read as a Pnm_ppm
  */
-void compress40(FILE *input){
+void compress40(FILE *input)
+{
         Pnm_ppm inputPnm = Pnm_ppmread(input, uarray2_methods_blocked);
         
-        int compressWidth = inputPnm->width;
+        int trimmedWidth = inputPnm->width;
         int trimedHeight = inputPnm->height;
         bool change = false;
 
 
-        if(compressWidth % 2 == 1){
+        if(trimmedWidth % 2 == 1){
                 change = true;
-                compressWidth--;
+                trimmedWidth--;
         }
         if(trimedHeight % 2 == 1){
                 change = true;
                 trimedHeight--;
         }
 
-        printf("COMP40 Compressed image format 2\n%u %u\n", compressWidth, trimedHeight);
+        printf("COMP40 Compressed image format 2\n%u %u\n", trimmedWidth, trimedHeight);
+        
+        if(change){
+                /* copy over the old array to the new one */
+                UArray2b_T newArray = trimmedArray((UArray2b_T)inputPnm->pixels, trimmedWidth, trimedHeight);
+                inputPnm->methods->free(&(inputPnm->pixels));
+                inputPnm->pixels = (A2Methods_UArray2)newArray;
+        }
 
-        // UArray2_T trimedArray;
-        // if(change){
-        //         UArray2_T trimedArray UArray2_new(compressWidth);
-        // }
-        (void) change;
         inputPnm->height = trimedHeight;
-        inputPnm->width = compressWidth;
+        inputPnm->width = trimmedWidth;
         blockedPnmIterator(inputPnm);
+
         Pnm_ppmfree(&inputPnm);
 }
+
+static UArray2b_T trimmedArray(UArray2b_T original, int trimmedWidth, int trimmedHeight)
+{
+        UArray2b_T trimmed = UArray2b_new(trimmedWidth, trimmedHeight, sizeof(struct Pnm_rgb), PIXSINBLOCK/2);
+        UArray2b_map(trimmed, copyArray, original);
+        return trimmed;
+
+}
+
+void copyArray(int col, int row, UArray2b_T copy, void *curr, void *original)
+{
+        original = (UArray2b_T) original;
+        *((Pnm_rgb)curr) = *((Pnm_rgb)UArray2b_at(original, col, row));
+        (void) copy;
+}
+
+
+
 
 // static void printRGB(Pnm_rgb input){
 //         printf("%c%c%c", input->red, input->green, input->blue);
 // }
 
-void decompress40(FILE *input){
-        int denominator = 255;
+void decompress40(FILE *input)
+{
         unsigned height, width;
         int read = fscanf(input, "COMP40 Compressed image format 2\n%u %u", &width, &height);
+        int denominator = denominatorCalculator(height * width);
         assert(read == 2);
         int c = getc(input);
         assert(c == '\n');
@@ -180,12 +217,30 @@ void decompress40(FILE *input){
         for(unsigned j = 0; j < height/2; j++){                
                 for(unsigned k = 0; k < width/2; k++){
                         uint64_t word = 0;
-                        // printf("first bits are %lu\n", firstBits);
-                        // printf("second bits are %lu\n", firstBits);
-                        word = Bitpack_newu(word, 8, 0, getc(input));
-                        word = Bitpack_newu(word, 8, 8, getc(input));
-                        word = Bitpack_newu(word, 8, 16, getc(input));
-                        word = Bitpack_newu(word, 8, 24, getc(input));
+                        int first = getc(input);
+                        assert(first != EOF);
+
+                        int second = getc(input);
+                        assert(second != EOF);
+
+                        int third = getc(input);
+                        assert(third != EOF);
+
+                        int fourth = getc(input);
+                        assert(fourth != EOF);
+
+                        
+                        // printf("first char %d\n", first);
+                        // printf("second char %d\n", second);
+                        // printf("third char %d\n", third);
+                        // printf("fourth char %d\n", fourth);
+
+                        word = Bitpack_newu(word, 8, 0, first);
+                        word = Bitpack_newu(word, 8, 8, second);
+                        word = Bitpack_newu(word, 8, 16, third);
+                        word = Bitpack_newu(word, 8, 24, fourth);
+
+                        //printf("the word is: %lu\n", word);
 
                         rgbBlock_T decompressedBlock = decompress(word, denominator);
                         // for(int i = 0; i < PIXSINBLOCK; i++){
@@ -205,6 +260,15 @@ void decompress40(FILE *input){
 
         Pnm_ppmwrite(stdout, pixmap);
         Pnm_ppmfree(&pixmap);
+}
+
+/*
+*/
+static int denominatorCalculator(int size)
+{
+        assert(size > 0);
+        /*           65535             65535 - 255                      (scaling coeffient which ranges from 0 - 1)*/
+        return (MAXDENOMINATOR) - (MAXDENOMINATOR - MINDENOMINATOR) * (2 * atan(size / SCALLINGCOEFFICIENT) /  PI);
 }
 
 

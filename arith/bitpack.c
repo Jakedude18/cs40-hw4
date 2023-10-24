@@ -1,3 +1,15 @@
+/**
+ * @file bitpack.c
+ * @author Jake Kerrigan, Jacob Frieman
+ * @date 10/16/2023
+ * 
+ * @brief 
+ * This file defines the the functions in the bitpack interface and the static
+ * functions twosCompliment, makeMask and newHelper. These functions assist in
+ * bitpacking values into an integer and unpacking values from a bitpacked
+ * integer.
+ **/
+
 #include <bitpack.h>
 #include <stdio.h>
 #include <assert.h>
@@ -9,14 +21,16 @@ static uint64_t twosCompliment(int64_t input);
 static uint64_t makeMask(unsigned width, unsigned lsb);
 static uint64_t newHelper(uint64_t word, unsigned width, unsigned lsb, uint64_t value);
 
-bool Bitpack_fitsu(uint64_t n, unsigned width){
+bool Bitpack_fitsu(uint64_t n, unsigned width)
+{
         if(width == 0){
                 return 0;
         }
         return (n >> width) == 0;
 }
 
-bool Bitpack_fitss(int64_t n, unsigned width){
+bool Bitpack_fitss(int64_t n, unsigned width)
+{
         if(width == 0){
                 return false;
         }
@@ -30,7 +44,8 @@ bool Bitpack_fitss(int64_t n, unsigned width){
 
 }
 
-uint64_t Bitpack_getu(uint64_t word, unsigned width, unsigned lsb){
+uint64_t Bitpack_getu(uint64_t word, unsigned width, unsigned lsb)
+{
         if(width == 0){
                 return 0;
         }
@@ -41,21 +56,25 @@ uint64_t Bitpack_getu(uint64_t word, unsigned width, unsigned lsb){
         return (mask & word) >> lsb;
 }
 
-int64_t Bitpack_gets(uint64_t word, unsigned width, unsigned lsb){
+int64_t Bitpack_gets(uint64_t word, unsigned width, unsigned lsb)
+{
 
         uint64_t notsigned = Bitpack_getu(word, width, lsb);
-        if(Bitpack_fitss(notsigned, width)){
+        //is this value negative
+        if (Bitpack_fitss(notsigned, width)) {
                 return notsigned;
         }
         else{
                 uint64_t rMask = ~0;
                 rMask = rMask >> (64 - width);
-                return -((int64_t) (twosCompliment(notsigned) + 1) & rMask);
+                return  -(((int64_t) twosCompliment(notsigned) + 1) & rMask);
         }
 }
 
-uint64_t Bitpack_newu(uint64_t word, unsigned width, unsigned lsb, uint64_t value){
-        if(!Bitpack_fitsu(value, width)){
+uint64_t Bitpack_newu(uint64_t word, unsigned width, unsigned lsb, uint64_t 
+value)
+{
+        if (!Bitpack_fitsu(value, width)) {
                 RAISE(Bitpack_Overflow);
         }
         assert(width <= 64);
@@ -64,16 +83,25 @@ uint64_t Bitpack_newu(uint64_t word, unsigned width, unsigned lsb, uint64_t valu
         
 }
 
-uint64_t Bitpack_news(uint64_t word, unsigned width, unsigned lsb,  int64_t value){
-        if(!Bitpack_fitss(value, width)){
+uint64_t Bitpack_news(uint64_t word, unsigned width, unsigned lsb,  int64_t 
+value)
+{
+        if (!Bitpack_fitss(value, width)) {
                 RAISE(Bitpack_Overflow);
         }
         assert(width <= 64);
         assert(width + lsb <= 64);
+        if (value < 0) {
+                uint64_t mask = makeMask(width, 0);
+                value = value & mask;
+                return newHelper(word, width, lsb, (uint64_t) value);
+        }
         return newHelper(word, width, lsb, (uint64_t)value);
 }
 
-static uint64_t newHelper(uint64_t word, unsigned width, unsigned lsb, uint64_t value){
+static uint64_t newHelper(uint64_t word, unsigned width, unsigned lsb, uint64_t 
+value)
+{
         //make a mask
         uint64_t mask = makeMask(width, lsb);
         mask = ~mask;
@@ -86,7 +114,8 @@ static uint64_t newHelper(uint64_t word, unsigned width, unsigned lsb, uint64_t 
         return word;
 }
 
-static uint64_t makeMask(unsigned width, unsigned lsb){
+static uint64_t makeMask(unsigned width, unsigned lsb)
+{
         //make a mask
         uint64_t mask_l = ~0;
         mask_l = mask_l << (width + lsb);
@@ -97,7 +126,8 @@ static uint64_t makeMask(unsigned width, unsigned lsb){
         return mask;
 }
 
-static uint64_t twosCompliment(int64_t input){
+static uint64_t twosCompliment(int64_t input)
+{
         return ~input;
 }
 
